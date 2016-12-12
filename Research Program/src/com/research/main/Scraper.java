@@ -142,13 +142,14 @@ public class Scraper {
         products.clear();
         if(listOfLinks.isEmpty() || texts.isEmpty())
             return;
-        String str = "";
+        String str;
         try {
             for(int i = 0; i < listOfLinks.size(); i++) {
                 document = org.jsoup.Jsoup.connect(listOfLinks.get(i)).userAgent("Chrome").get();
-                str = document.select("body").text();
+                str = document.select("body").text().trim();
                 // str = sentences.stream().map((e) -> e.text()).reduce(str, String::concat);
-                products.add(StringUtil.getWebsiteStrings(identifier, ignoreAbbreviations, lookForInSearch, str, sentenceAmountToLeft, sentenceAmountToRight));
+                if(str.length() >0 )
+                    products.add(StringUtil.getWebsiteStrings(identifier, ignoreAbbreviations, lookForInSearch, str, sentenceAmountToLeft, sentenceAmountToRight));
                 str = "";
             }
         } catch(IOException exc) {
@@ -173,7 +174,8 @@ public class Scraper {
                 end = str.indexOf((counter+ 1) + ": ");
                 if(end <= -1)
                     end = str.length();
-                if(end - start >= 0)
+                
+                if(end - start > 0)
                     System.out.println(indention + str.substring(start, end));
                 else    
                     stopLooping = true;
@@ -239,12 +241,18 @@ public class Scraper {
         String str = products.get(i);
         int start = 0;
         int end;
-        while(str.contains(counter + ": ")) {
+        boolean stopLooping = false;
+        while(str.contains(counter + ": ") || !stopLooping) {
             end = str.indexOf((counter+ 1) + ": ");
-            if(end == -1)
+            if(end <= -1)
                 end = str.length();
-            writer.println();
-            writer.println(indention + str.substring(start, end));
+            if(end - start > 0) {
+                writer.println();
+                writer.println(indention + str.substring(start, end));
+            }
+            else    
+                stopLooping = true;
+           
             start = end;
             counter++;
         }

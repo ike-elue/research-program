@@ -17,6 +17,7 @@ public class Main {
     public static void main(String[] args) {
         Scraper scraper = new Scraper("-/-");
         scraper.search("Martin Luther King", new String[] {"Martin"}, 3, 1, 1);
+        // Doesn't work very well
         scraper.save(true);
     }
     
