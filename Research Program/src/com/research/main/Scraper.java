@@ -38,6 +38,7 @@ public class Scraper {
     private final String indention;
     private final String identifier;
     private final String[] ignoreAbbreviations;
+    private String[] omissions;
     
     /**
      * Constructor
@@ -67,6 +68,7 @@ public class Scraper {
                 "D.C.",
                 "U.S.",
                 "U.S.A."}, identifier);
+        omissions = null;
         indention = "     ";
         document = null;
         keyword = "";
@@ -90,31 +92,27 @@ public class Scraper {
         }
         return strings;
     }
-    
-    /**
-     * Searches the keyword and saves the links
-     * @param keyword String you want to search and look for
-     * @param amount Amount of links to get
-     * @param sentenceAmountToLeft When getting the sentence that contains keyword this determines how far left
-     * @param sentenceAmountToRight This determines how far right 
-     */
-    public void search(String keyword, int amount, int sentenceAmountToLeft, int sentenceAmountToRight) {
-        search(keyword, new String[] {keyword}, amount, sentenceAmountToLeft, sentenceAmountToRight);
-    }
-    
+
     /**
      * Searches the keyword and saves the links
      * @param keyword String you want to search
      * @param lookForInSearch String you want to search in the links
+     * @param omissions strings to not include in result
      * @param amount Amount of links to get
      * @param sentenceAmountToLeft When getting the sentence that contains keyword this determines how far left
      * @param sentenceAmountToRight This determines how far right 
      */
-    public void search(String keyword, String[] lookForInSearch, int amount, int sentenceAmountToLeft, int sentenceAmountToRight) {
+    public void search(String keyword, String[] lookForInSearch, String[] omissions, int amount, int sentenceAmountToLeft, int sentenceAmountToRight) {
         if(!keyword.equals(this.keyword)) {
             previousAmount = 0;
             this.keyword = keyword;
         }
+        
+        if(omissions != null)
+            this.omissions = omissions.clone();
+        else 
+            this.omissions = null;
+        
         listOfLinks.clear();
         texts.clear();
         String search = "http://www.google.com/search?q=";
@@ -129,7 +127,10 @@ public class Scraper {
             exc.printStackTrace();
         }
         this.previousAmount = amount;
-        find(lookForInSearch, sentenceAmountToLeft, sentenceAmountToRight);
+        if(lookForInSearch != null)
+            find(lookForInSearch, sentenceAmountToLeft, sentenceAmountToRight);
+        else
+            find(new String[] {keyword}, sentenceAmountToLeft, sentenceAmountToRight);
     }
     
     /**
@@ -140,15 +141,18 @@ public class Scraper {
      */
     public void find(String[] lookForInSearch, int sentenceAmountToLeft, int sentenceAmountToRight) {
         products.clear();
-        if(listOfLinks.isEmpty() || texts.isEmpty())
+        if(listOfLinks.isEmpty() || texts.isEmpty()) {
+            System.out.println("List Are Empty");
             return;
-        String str = "";
+        }
+        String str;
         try {
             for(int i = 0; i < listOfLinks.size(); i++) {
                 document = org.jsoup.Jsoup.connect(listOfLinks.get(i)).userAgent("Chrome").get();
-                str = document.select("body").text();
+                str = document.select("body").text().trim();
                 // str = sentences.stream().map((e) -> e.text()).reduce(str, String::concat);
-                products.add(StringUtil.getWebsiteStrings(identifier, ignoreAbbreviations, lookForInSearch, str, sentenceAmountToLeft, sentenceAmountToRight));
+                if(str.length() >0 )
+                    products.add(StringUtil.getWebsiteStrings(identifier, omissions, ignoreAbbreviations, lookForInSearch, str, sentenceAmountToLeft, sentenceAmountToRight));
                 str = "";
             }
         } catch(IOException exc) {
@@ -173,7 +177,8 @@ public class Scraper {
                 end = str.indexOf((counter+ 1) + ": ");
                 if(end <= -1)
                     end = str.length();
-                if(end - start >= 0)
+                
+                if(end - start > 0)
                     System.out.println(indention + str.substring(start, end));
                 else    
                     stopLooping = true;
@@ -239,12 +244,18 @@ public class Scraper {
         String str = products.get(i);
         int start = 0;
         int end;
-        while(str.contains(counter + ": ")) {
+        boolean stopLooping = false;
+        while(str.contains(counter + ": ") || !stopLooping) {
             end = str.indexOf((counter+ 1) + ": ");
-            if(end == -1)
+            if(end <= -1)
                 end = str.length();
-            writer.println();
-            writer.println(indention + str.substring(start, end));
+            if(end - start > 0) {
+                writer.println();
+                writer.println(indention + str.substring(start, end));
+            }
+            else    
+                stopLooping = true;
+           
             start = end;
             counter++;
         }

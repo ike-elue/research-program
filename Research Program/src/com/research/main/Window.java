@@ -9,11 +9,18 @@ import java.awt.Color;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.Arrays;
+import java.util.Scanner;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 /**
  *
@@ -22,22 +29,24 @@ import javax.swing.JTextField;
 public class Window extends JFrame implements ActionListener{
     private final Scraper scraper;
     private String[] keywords;
+    private String[] omissions;
     
     private final JPanel mainPanel;
     
     private final JPanel topPanel;
+    private final JPanel bellowTopPanel;
     private final JPanel midTop, midmid, midBottom;
     
     private final JTextField searchField;
     private final JButton search;
     
+    private final JLabel searchAmount;
     private final JTextField amount;
-    // Green when succesful, red when not
     private final JButton loadKeywords;
-    
+    private final JButton loadOmissions;
     private final JButton[] arrows;
-    private final JLabel sentenceLeft, sentenceRight;
-    private int right, left;
+    private final JLabel sentenceLeft, sentenceRight, right, left;
+    private int rightNum, leftNum;
     
     private final JButton save;
     
@@ -50,41 +59,56 @@ public class Window extends JFrame implements ActionListener{
         setResizable(false);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-        pack();
         
-        right = 0;
-        left = 0;
+        rightNum = 0;
+        leftNum = 0;
         
         mainPanel = new JPanel();
         topPanel = new JPanel();
+        bellowTopPanel = new JPanel();
         midTop = new JPanel();
         midmid = new JPanel();
         midBottom = new JPanel();
-        searchField = new JTextField("Enter Search Word Here");
+        searchField = new JTextField(20);
         search = new JButton("Search");
-        amount = new JTextField("0");
+        searchAmount = new JLabel("Search Amount: ");
+        amount = new JTextField(2);
         loadKeywords = new JButton("Load Keywords");
+        loadOmissions = new JButton("Load Omissions");
         arrows = new JButton[6];
-        sentenceLeft = new JLabel("Sentences Left: " + left);
-        sentenceRight = new JLabel("Sentences Right: " + right);
+        sentenceLeft = new JLabel("Sentences Left: ");
+        left = new JLabel("0");
+        sentenceRight = new JLabel("Sentences Right: ");
+        right = new JLabel("0");
         save = new JButton("Save");
         
         init();
        
         setVisible(true);
+        //pack();
     }
     
     private void init() {
-        mainPanel.setLayout(new GridLayout(6, 1));
+        mainPanel.setLayout(new GridLayout(8, 1));
         
         search.addActionListener(this);
+        
+        searchAmount.setMinimumSize(searchAmount.getPreferredSize());
+        searchAmount.setMaximumSize(searchAmount.getPreferredSize());
         
         topPanel.add(searchField);
         topPanel.add(search);
         
+        bellowTopPanel.add(searchAmount);
+        bellowTopPanel.add(amount);
+        
         loadKeywords.setBackground(Color.RED);
         loadKeywords.addActionListener(this);
         
+        loadOmissions.setEnabled(false);
+        loadOmissions.setBackground(Color.RED);
+        loadOmissions.addActionListener(this);
+                
         arrows[0] = new JButton("<");
         arrows[0].addActionListener(this);
         arrows[1] = new JButton("<<>>");
@@ -107,13 +131,17 @@ public class Window extends JFrame implements ActionListener{
         midmid.add(arrows[5]);
         
         midBottom.add(sentenceLeft);
+        midBottom.add(left);
         midBottom.add(sentenceRight);
+        midBottom.add(right);
         
         save.setEnabled(false);
         save.addActionListener(this);
                 
         mainPanel.add(topPanel);
+        mainPanel.add(bellowTopPanel);
         mainPanel.add(loadKeywords);
+        mainPanel.add(loadOmissions);
         mainPanel.add(midTop);
         mainPanel.add(midmid);
         mainPanel.add(midBottom);
@@ -125,12 +153,120 @@ public class Window extends JFrame implements ActionListener{
     @Override
     public void actionPerformed(ActionEvent e) {
         Object obj = e.getSource();
-        if(obj.equals(search)) {
-            // Check amount if valid
-            scraper.search(searchField.getText(), keywords, Integer.valueOf(amount.getText()), left, right);
+        if(!isInt(amount.getText())) {
+            JOptionPane.showMessageDialog(null, "Amount is not valid", "Error", JOptionPane.PLAIN_MESSAGE); 
+            return;
+        }
+        
+        if(obj.equals(arrows[0])) {
+            leftNum++;
+        }
+        
+        if(obj.equals(arrows[1])) {
+            leftNum++;
+            rightNum++;
+        }
+        
+        if(obj.equals(arrows[2])) {
+            rightNum++;
+        }
+        
+        if(obj.equals(arrows[3])) {
+            if(leftNum > 0)
+                leftNum--;
+        }
+        
+        if(obj.equals(arrows[4])) {
+            if(leftNum > 0)
+                leftNum--;
+            if(rightNum > 0)
+                rightNum--;
+        }
+        
+        if(obj.equals(arrows[5])) {
+            if(leftNum > 0)
+                rightNum--;
+        }
+        
+        if(obj.equals(loadKeywords)) {
+            keywords = null;
+            JFileChooser chooser = new JFileChooser();
+            FileNameExtensionFilter filter = new FileNameExtensionFilter(
+                "Text Files (*.txt)", "txt");
+            chooser.setFileFilter(filter);
+            int returnVal = chooser.showOpenDialog(null);
+            String file = "";
+            if(returnVal == JFileChooser.APPROVE_OPTION) {
+              file = chooser.getSelectedFile().getAbsolutePath();
+            }
+
+            if(file.equals("") || !file.endsWith(".txt")) {
+                JOptionPane.showMessageDialog(null, "Error in File Chosen", "Error", JOptionPane.PLAIN_MESSAGE); 
+                loadKeywords.setBackground(Color.RED);
+                loadOmissions.setBackground(Color.RED);
+                loadOmissions.setEnabled(false);
+                omissions = null;
+            }
+            else {
+                try(Scanner scan = new Scanner(new File(file))) {
+                    keywords = scan.nextLine().split(",");
+                    System.out.println(Arrays.toString(keywords));
+                    scan.close();
+                } catch(FileNotFoundException exc) {
+                    exc.printStackTrace();
+                }
+                loadKeywords.setBackground(Color.GREEN);
+                loadOmissions.setEnabled(true);
+            }
+        }
+        
+        if(obj.equals(loadOmissions)) {
+            omissions = null;
+            JFileChooser chooser = new JFileChooser();
+            FileNameExtensionFilter filter = new FileNameExtensionFilter(
+                "Text Files (*.txt)", "txt");
+            chooser.setFileFilter(filter);
+            int returnVal = chooser.showOpenDialog(null);
+            String file = "";
+            if(returnVal == JFileChooser.APPROVE_OPTION) {
+              file = chooser.getSelectedFile().getAbsolutePath();
+            }
+
+            if(file.equals("") || !file.endsWith(".txt")) {
+                JOptionPane.showMessageDialog(null, "Error in File Chosen", "Error", JOptionPane.PLAIN_MESSAGE); 
+                loadOmissions.setBackground(Color.RED);
+            }
+            else {
+                try(Scanner scan = new Scanner(new File(file))) {
+                    omissions = scan.nextLine().split(",");
+                    System.out.println(Arrays.toString(omissions));
+                    scan.close();
+                } catch(FileNotFoundException exc) {
+                    exc.printStackTrace();
+                }
+                loadOmissions.setBackground(Color.GREEN);
+            }
+        }
+        
+        if(obj.equals(search) && searchField.getText().length() > 0) {
+            scraper.search(searchField.getText(), keywords, omissions, Integer.valueOf(amount.getText()), leftNum, rightNum);
+            save.setEnabled(true);
+            JOptionPane.showMessageDialog(null, "Search Query Completed", "Success", JOptionPane.PLAIN_MESSAGE);
         }
         else if(obj.equals(save)) {
             scraper.save();
+            save.setEnabled(false);
         }
+        
+        left.setText(leftNum + "");
+        right.setText(rightNum + "");
+    }
+    
+    private boolean isInt(String s) {
+        for(int i = 0; i < s.length(); i++) {
+            if(!Character.isDigit(s.charAt(i)))
+                return false;
+        }
+        return true;
     }
 }

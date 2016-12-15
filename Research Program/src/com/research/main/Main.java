@@ -15,9 +15,7 @@ public class Main {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        Scraper scraper = new Scraper("-/-");
-        scraper.search("Martin Luther King", new String[] {"Martin"}, 3, 1, 1);
-        scraper.save(true);
+        Window window = new Window("-/-");
     }
     
 }
