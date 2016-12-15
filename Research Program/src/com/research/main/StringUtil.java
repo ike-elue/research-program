@@ -16,6 +16,7 @@ public class StringUtil {
     /**
      * Returns the sentences in the website that fit the criteria
      * @param identifier unique set of characters that don't clash with patterns 
+     * @param omissions strings that you don't want in the result 
      * @param ignoreAbbreviations Abbreviations to ignore (because they have periods) 
      * @param keywords words to look for in webpage
      * @param webpage all the sentences of a webpage
@@ -23,8 +24,8 @@ public class StringUtil {
      * @param sentencesRight amount of future sentences to grab 
      * @return the sentences in the website that fit the criteria 
      */
-    public static String getWebsiteStrings(String identifier, String[] ignoreAbbreviations, String[] keywords, String webpage, int sentencesLeft, int sentencesRight) {
-        String doc = webpage.replaceAll("\\.", identifier);
+    public static String getWebsiteStrings(String identifier, String[] omissions, String[] ignoreAbbreviations,  String[] keywords, String webpage, int sentencesLeft, int sentencesRight) {
+        String doc = webpage.replaceAll("\\.", identifier).replaceAll("!", identifier).replaceAll("\\?", identifier);
         String[] sentences = format(doc, ignoreAbbreviations, identifier).split(identifier);
         int currentIndex = -1;
         String str = "";
@@ -42,17 +43,20 @@ public class StringUtil {
                 }
             }
             if(finding) {
-                str += counter + ": "; // Might have to add \n back 
                 left = currentIndex - sentencesLeft;
                 if(left < 0)
                     left = 0;
                 right = currentIndex + sentencesRight + 1;
                 if(right > sentences.length)
                     right = sentences.length;
-                for(int i = left; i < right; i++) {
-                    str += sentences[i].trim() + ". ";
-                }
-                counter++;                
+                
+                if(!containsOmission(omissions, sentences, left, right)) {
+                    str += counter + ": ";
+                    for(int i = left; i < right; i++) {
+                        str += sentences[i].trim() + ". ";
+                    }
+                    counter++;  
+                }             
             }
         }
         if(str.length() == 0)
@@ -132,5 +136,24 @@ public class StringUtil {
             strings[i] = strs[i].toLowerCase();
         }
         return strings;
+    }
+    
+    /**
+     * Returns true if the sentences contain the omissions
+     * @param omissions elements you don't want in final result
+     * @param sentences sentences in doc
+     * @param left start index 
+     * @param right end index
+     * @return true if the sentences contain the omissions
+     */
+    private static boolean containsOmission(String[] omissions, String[] sentences, int left, int right) {
+        if(omissions == null)
+            return false;
+        
+        String str = "";
+        for(int i = left; i < right; i++) {
+            str += sentences[i];
+        }
+        return isKeyword(str, omissions);
     }
 }

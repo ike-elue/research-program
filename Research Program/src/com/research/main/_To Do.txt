@@ -1,0 +1,3 @@
+- rate the entries based on point system
+- make it an applet
+- add reset button
