@@ -1,4 +1,0 @@
-Research Program (Start Simple):
-    - make it fancy (gui)
-    - rate the entries based on point system
-    - make it an applet
