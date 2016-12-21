@@ -67,7 +67,9 @@ public class Scraper {
                 "Sun.",
                 "D.C.",
                 "U.S.",
-                "U.S.A."}, identifier);
+                "U.S.A.",
+                ". . .",
+                "..."}, identifier);
         omissions = null;
         indention = "     ";
         document = null;
@@ -100,9 +102,13 @@ public class Scraper {
      * @param omissions strings to not include in result
      * @param amount Amount of links to get
      * @param sentenceAmountToLeft When getting the sentence that contains keyword this determines how far left
-     * @param sentenceAmountToRight This determines how far right 
+     * @param sentenceAmountToRight This determines how far right
+     * @param reset determines if current entry should restart
      */
-    public void search(String keyword, String[] lookForInSearch, String[] omissions, int amount, int sentenceAmountToLeft, int sentenceAmountToRight) {
+    public void search(String keyword, String[] lookForInSearch, String[] omissions, int amount, int sentenceAmountToLeft, int sentenceAmountToRight, boolean reset) {
+        if(reset)
+            previousAmount = 0;
+        
         if(!keyword.equals(this.keyword)) {
             previousAmount = 0;
             this.keyword = keyword;

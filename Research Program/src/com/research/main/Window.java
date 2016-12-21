@@ -33,6 +33,7 @@ public class Window extends JFrame implements ActionListener{
     private final Scraper scraper;
     private String[] keywords;
     private String[] omissions;
+    private boolean reset;
     
     private final JPanel mainPanel;
     
@@ -41,6 +42,7 @@ public class Window extends JFrame implements ActionListener{
     private final JPanel topPanel;
     private final JPanel bellowTopPanel;
     private final JPanel midTop, midmid, midBottom;
+    private final JPanel bottomPanel;
     
     private final JTextField searchField;
     private final JButton search;
@@ -56,11 +58,13 @@ public class Window extends JFrame implements ActionListener{
     private int rightNum, leftNum;
     
     private final JButton save;
+    private final JButton resetButton;
     
     public Window(String identifier) {
         super("Research");
         
         scraper = new Scraper(identifier);
+        reset = false;
         
         setSize(320, 240);
         setResizable(false);
@@ -78,6 +82,7 @@ public class Window extends JFrame implements ActionListener{
         midTop = new JPanel();
         midmid = new JPanel();
         midBottom = new JPanel();
+        bottomPanel = new JPanel();
         searchField = new JTextField(20);
         search = new JButton("Search");
         searchAmount = new JLabel("Search Amount: ");
@@ -92,11 +97,11 @@ public class Window extends JFrame implements ActionListener{
         sentenceRight = new JLabel("Sentences Right: ");
         right = new JLabel("0");
         save = new JButton("Save");
+        resetButton = new JButton("Reset Search Index");
         
         init();
        
         setVisible(true);
-        //pack();
     }
     
     private void init() {
@@ -116,14 +121,14 @@ public class Window extends JFrame implements ActionListener{
         loadKeywordsTextArea.setBackground(Color.RED);
         loadKeywordsTextArea.addActionListener(this);
         
-        loadOmissionsTextArea.setEnabled(false);
+        loadOmissionsTextArea.setEnabled(true);
         loadOmissionsTextArea.setBackground(Color.RED);
         loadOmissionsTextArea.addActionListener(this);
                 
         loadKeywords.setBackground(Color.RED);
         loadKeywords.addActionListener(this);
         
-        loadOmissions.setEnabled(false);
+        loadOmissions.setEnabled(true);
         loadOmissions.setBackground(Color.RED);
         loadOmissions.addActionListener(this);
         
@@ -153,14 +158,21 @@ public class Window extends JFrame implements ActionListener{
         midBottom.add(sentenceRight);
         midBottom.add(right);
         
+        save.setPreferredSize(resetButton.getPreferredSize());
         save.setEnabled(false);
         save.addActionListener(this);
-                
+             
+        resetButton.addActionListener(this);
+        resetButton.setEnabled(false);
+        
         keywordPanel.add(loadKeywords);
         keywordPanel.add(loadKeywordsTextArea);
         
         omissionPanel.add(loadOmissions);
         omissionPanel.add(loadOmissionsTextArea);
+        
+        bottomPanel.add(save);
+        bottomPanel.add(resetButton);
         
         mainPanel.add(topPanel);
         mainPanel.add(bellowTopPanel);
@@ -169,7 +181,7 @@ public class Window extends JFrame implements ActionListener{
         mainPanel.add(midTop);
         mainPanel.add(midmid);
         mainPanel.add(midBottom);
-        mainPanel.add(save);
+        mainPanel.add(bottomPanel);
         
         this.add(mainPanel);
     }
@@ -181,10 +193,6 @@ public class Window extends JFrame implements ActionListener{
         if(keywords == null) {
             loadKeywords.setBackground(Color.RED);
             loadKeywordsTextArea.setBackground(Color.RED);
-            loadOmissions.setEnabled(false);
-            loadOmissionsTextArea.setEnabled(false);
-            loadOmissions.setBackground(Color.RED);
-            loadOmissionsTextArea.setBackground(Color.RED);
         }
         
         if(omissions == null) {
@@ -195,6 +203,11 @@ public class Window extends JFrame implements ActionListener{
         if(!isInt(amount.getText())) {
             JOptionPane.showMessageDialog(null, "Amount is not valid", "Error", JOptionPane.PLAIN_MESSAGE); 
             return;
+        }
+        
+        if(obj.equals(resetButton)) {
+            reset = true;
+            resetButton.setEnabled(false);
         }
         
         if(obj.equals(arrows[0])) {
@@ -229,23 +242,17 @@ public class Window extends JFrame implements ActionListener{
         
         if(obj.equals(loadKeywordsTextArea)) {
             keywords = null;
-            omissions = null;
             
             TextAreaWindow tWindow = new TextAreaWindow(this, Window.KEYWORD);
             
             loadKeywords.setBackground(Color.GREEN);
             loadKeywordsTextArea.setBackground(Color.GREEN);
-            loadOmissions.setEnabled(true);
-            loadOmissionsTextArea.setEnabled(true);
-            loadOmissions.setBackground(Color.RED);
-            loadOmissionsTextArea.setBackground(Color.RED);
             
             return;
         }
         
         if(obj.equals(loadKeywords)) {
             keywords = null;
-            omissions = null;
             JFileChooser chooser = new JFileChooser();
             FileNameExtensionFilter filter = new FileNameExtensionFilter(
                 "Text Files (*.txt)", "txt");
@@ -259,8 +266,6 @@ public class Window extends JFrame implements ActionListener{
             if(file.equals("") || !file.endsWith(".txt")) {
                 JOptionPane.showMessageDialog(null, "Error in File Chosen", "Error", JOptionPane.PLAIN_MESSAGE); 
                 loadKeywords.setBackground(Color.RED);
-                loadOmissions.setBackground(Color.RED);
-                loadOmissions.setEnabled(false);    
             }
             else {
                 try(Scanner scan = new Scanner(new File(file))) {
@@ -271,7 +276,6 @@ public class Window extends JFrame implements ActionListener{
                     exc.printStackTrace();
                 }
                 loadKeywords.setBackground(Color.GREEN);
-                loadOmissions.setEnabled(true);
             }
         }
         
@@ -315,7 +319,9 @@ public class Window extends JFrame implements ActionListener{
         }
         
         if(obj.equals(search) && searchField.getText().length() > 0) {
-            scraper.search(searchField.getText(), keywords, omissions, Integer.valueOf(amount.getText()), leftNum, rightNum);
+            resetButton.setEnabled(true);
+            scraper.search(searchField.getText(), keywords, omissions, Integer.valueOf(amount.getText()), leftNum, rightNum, reset);
+            reset = false;
             save.setEnabled(true);
             JOptionPane.showMessageDialog(null, "Search Query Completed", "Success", JOptionPane.PLAIN_MESSAGE);
         }

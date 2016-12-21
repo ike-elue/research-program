@@ -25,7 +25,7 @@ public class StringUtil {
      * @return the sentences in the website that fit the criteria 
      */
     public static String getWebsiteStrings(String identifier, String[] omissions, String[] ignoreAbbreviations,  String[] keywords, String webpage, int sentencesLeft, int sentencesRight) {
-        String doc = webpage.replaceAll("\\.", identifier).replaceAll("!", identifier).replaceAll("\\?", identifier);
+        String doc = webpage.replaceAll("\\.", identifier).replaceAll("\"", identifier).replaceAll("!", identifier).replaceAll("\\?", identifier);
         String[] sentences = format(doc, ignoreAbbreviations, identifier).split(identifier);
         int currentIndex = -1;
         String str = "";
