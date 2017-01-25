@@ -6,6 +6,7 @@
 package com.research.main;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  *
@@ -24,7 +25,8 @@ public class StringUtil {
      * @param sentencesRight amount of future sentences to grab 
      * @return the sentences in the website that fit the criteria 
      */
-    public static String getWebsiteStrings(String identifier, String[] omissions, String[] ignoreAbbreviations,  String[] keywords, String webpage, int sentencesLeft, int sentencesRight) {
+    public static HashMap<String, ArrayList<String>> getWebsiteStrings(String identifier, String[] omissions, String[] ignoreAbbreviations,  String[] keywords, String webpage, int sentencesLeft, int sentencesRight) {
+        HashMap<String, ArrayList<String>> keywordMap = new HashMap<>();
         String doc = webpage.replaceAll("\\.", identifier).replaceAll("\"", identifier).replaceAll("!", identifier).replaceAll("\\?", identifier);
         String[] sentences = format(doc, ignoreAbbreviations, identifier).split(identifier);
         int currentIndex = -1;
@@ -32,11 +34,12 @@ public class StringUtil {
         boolean finding = true;
         int left;
         int right = 0;
-        int counter = 1;
+        String s = "";
         while(finding) {
             finding = false;
             for(int i = right; i < sentences.length; i++) {
-                if(isKeyword(sentences[i], keywords)) {
+                s = isKeyword(sentences[i], keywords);
+                if(s.length() != 0) {
                     currentIndex = i;
                     finding = true;
                     break;
@@ -51,17 +54,21 @@ public class StringUtil {
                     right = sentences.length;
                 
                 if(!containsOmission(omissions, sentences, left, right)) {
-                    str += counter + ": ";
                     for(int i = left; i < right; i++) {
                         str += sentences[i].trim() + ". ";
+                        
                     }
-                    counter++;  
+                    if(keywordMap.containsKey(s))
+                        keywordMap.get(s).add(str.replaceAll(identifier, "\\.").trim());
+                    else {
+                        keywordMap.put(s, new ArrayList<>());
+                        keywordMap.get(s).add(str.replaceAll(identifier, "\\.").trim());
+                    }
+                    str = "";
                 }             
             }
         }
-        if(str.length() == 0)
-            return "";
-        return str.replaceAll(identifier, "\\.").trim().substring(0, str.length() - (Integer.toString(counter - 1).length() + 2));
+        return keywordMap;
     }
     
     /**
@@ -87,8 +94,11 @@ public class StringUtil {
      * @return true if the given string matches any of the keywords (or phrases),
      * otherwise false
      */
-    private static boolean isKeyword(String statement, String[] keywords) {
-        return contains(lowerCase(statement.split(" ")), lowerCase(keywords)) != -1;
+    private static String isKeyword(String statement, String[] keywords) {
+        int[] i = contains(lowerCase(statement.split(" ")), lowerCase(keywords));
+        if(i.length == 1)
+            return "";
+        return keywords[i[1]];
     }
     
     /**
@@ -99,7 +109,7 @@ public class StringUtil {
      * @param comparator set of entries to compare to
      * @return index of when the array matches the comparator 
      */
-    private static int contains(String[] array, String[] comparator) {
+    private static int[] contains(String[] array, String[] comparator) {
         ArrayList<String[]> parts = new ArrayList<>();
         for (String comparator1 : comparator) {
             parts.add(comparator1.split(" "));
@@ -119,10 +129,10 @@ public class StringUtil {
                     }   
                 }
                 if(isEqual)
-                    return i;
+                    return new int[] {i, j};
             }
         }
-        return -1;
+        return new int[] {-1};
     }
     
     /**
@@ -154,6 +164,6 @@ public class StringUtil {
         for(int i = left; i < right; i++) {
             str += sentences[i];
         }
-        return isKeyword(str, omissions);
+        return isKeyword(str, omissions).length() != 0;
     }
 }
