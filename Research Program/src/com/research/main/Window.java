@@ -206,8 +206,11 @@ public class Window extends JFrame implements ActionListener{
         }
         
         if(obj.equals(resetButton)) {
-            reset = true;
-            resetButton.setEnabled(false);
+            int yes = JOptionPane.showConfirmDialog(null, "Are you sure you want to reset?", "Reset Button Index", JOptionPane.YES_NO_OPTION);
+            if(yes==JOptionPane.YES_OPTION) {
+                reset = true;
+                resetButton.setEnabled(false);
+            }
         }
         
         if(obj.equals(arrows[0])) {

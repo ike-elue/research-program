@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -31,7 +32,7 @@ public class Scraper {
     
     private final List<String> listOfLinks;
     private final List<String> texts;
-    private final List<String> products;
+    private final List<HashMap<String, ArrayList<String>>> products;
     
     private final String charset;
 
@@ -159,7 +160,6 @@ public class Scraper {
                 // str = sentences.stream().map((e) -> e.text()).reduce(str, String::concat);
                 if(str.length() >0 )
                     products.add(StringUtil.getWebsiteStrings(identifier, omissions, ignoreAbbreviations, lookForInSearch, str, sentenceAmountToLeft, sentenceAmountToRight));
-                str = "";
             }
         } catch(IOException exc) {
             exc.printStackTrace();
@@ -174,22 +174,11 @@ public class Scraper {
         for(int i = 0; i < products.size(); i++) {
             System.out.println("Website: " + texts.get(i));
             System.out.println("Link: " + listOfLinks.get(i));
-            int counter = 1;
-            String str = products.get(i);
-            int start = 0;
-            int end;
-            boolean stopLooping = false;
-            while(str.contains(counter + ": ") || !stopLooping) {
-                end = str.indexOf((counter+ 1) + ": ");
-                if(end <= -1)
-                    end = str.length();
-                
-                if(end - start > 0)
-                    System.out.println(indention + str.substring(start, end));
-                else    
-                    stopLooping = true;
-                start = end;
-                counter++;
+            for(String key : products.get(i).keySet()) {
+                System.out.println("From Keyword \"" + key + "\"");
+                for(int j = 0; j < products.get(i).get(key).size(); j++) {
+                    System.out.println(indention + j + ": " + products.get(i).get(key).get(j));
+                }
             }
             System.out.println();
             System.out.println();
@@ -226,44 +215,25 @@ public class Scraper {
             }
             
             if(writer != null) {
-                for(int i = 0; i < texts.size(); i++) {
+                for(int i = 0; i < products.size(); i++) {
                     writer.println("Website: " + texts.get(i));
                     writer.println("Link: " + listOfLinks.get(i));
-                    printProducts(writer, i); 
+                    for(String key : products.get(i).keySet()) {
+                        writer.println();
+                        writer.println("From Keyword \"" + key + "\"");
+                        for(int j = 0; j < products.get(i).get(key).size(); j++) {
+                            writer.println();
+                            writer.println(indention + j + ": " + products.get(i).get(key).get(j));
+                        }
+                    }
                     writer.println();
                     writer.println();
                 }
+                
                 JOptionPane.showMessageDialog(null, "Search has been successfully saved", "Success!", JOptionPane.PLAIN_MESSAGE);
                 writer.close();
                 writer.flush();
             }
-        }
-    }
-    
-    /**
-     * Prints the products correctly so any file can read it how it should be read
-     * @param writer prints to file
-     * @param i current iteration of the products
-     */
-    private void printProducts(PrintWriter writer, int i) {
-        int counter = 1;
-        String str = products.get(i);
-        int start = 0;
-        int end;
-        boolean stopLooping = false;
-        while(str.contains(counter + ": ") || !stopLooping) {
-            end = str.indexOf((counter+ 1) + ": ");
-            if(end <= -1)
-                end = str.length();
-            if(end - start > 0) {
-                writer.println();
-                writer.println(indention + str.substring(start, end));
-            }
-            else    
-                stopLooping = true;
-           
-            start = end;
-            counter++;
         }
     }
 }
